@@ -16,6 +16,7 @@ from xai_sdk.chat import image, system, tool, tool_result, user
 client = Client(
     api_key=os.getenv("XAI_API_KEY"),
     timeout=3600,
+    api_host="eu-west-1.api.x.ai",
 )
 fc = FirecrawlApp(api_key=os.getenv("FIRECRAWL_API_KEY"))
 
@@ -233,7 +234,7 @@ def analyze_prescription_streaming(file_bytes):
 
 # Gradio interface (Blocks version)
 def main():
-    with gr.Blocks() as demo:
+    with gr.Blocks(theme=gr.themes.Base()) as demo:
         gr.Markdown(
             """
             # MedGuide AI: Prescription Analyzer
