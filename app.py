@@ -16,7 +16,6 @@ from xai_sdk.chat import image, system, tool, tool_result, user
 client = Client(
     api_key=os.getenv("XAI_API_KEY"),
     timeout=3600,
-    api_host="eu-west-1.api.x.ai",
 )
 fc = FirecrawlApp(api_key=os.getenv("FIRECRAWL_API_KEY"))
 
