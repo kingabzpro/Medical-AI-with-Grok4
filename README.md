@@ -6,6 +6,12 @@
 
 A powerful AI-driven medical prescription analyzer that extracts medicine information from prescription images and provides comprehensive reports including prices, availability, dosage, and purchase links. Features a modern, clean interface with real-time streaming progress and collapsible sections for optimal user experience.
 
+
+
+https://github.com/user-attachments/assets/4195b25a-f5a3-4425-8026-634bd43a752c
+
+
+
 ## ✨ Key Features
 
 ### 🔍 **Advanced AI Analysis**
@@ -155,48 +161,4 @@ Medical-AI-with-Grok4/
 - **API Limits**: Be aware of rate limits for both xAI and Firecrawl APIs
 - **Accuracy**: AI extraction may not be 100% accurate; always verify medicine information
 
-## 🆕 Recent Updates
-
-### v2.0 - Enhanced User Experience (Latest)
-- ✨ **Collapsible Interface**: Clean main view with optional detailed logs
-- 🔄 **Real-time Streaming**: Live progress updates during AI processing
-- 📱 **Responsive Design**: Better mobile and desktop experience
-- ⚠️ **Collapsible Disclaimer**: Important medical warnings in expandable section
-- 🎨 **Modern UI**: Professional styling with improved readability
-- 🔧 **Updated Dependencies**: Latest versions of all packages for better stability
-
-### Previous Features
-- 🤖 **Grok-4 AI Integration**: Advanced image analysis and text extraction
-- 🚀 **Concurrent Processing**: Simultaneous medicine information retrieval
-- 📊 **Comprehensive Reports**: Detailed markdown output with structured data
-- 🛡️ **Error Handling**: Robust error management with user-friendly feedback
-
-## 🛡️ Error Handling
-
-The application includes comprehensive error handling for:
-- Invalid image formats (JPG, PNG support)
-- API timeouts and connectivity issues
-- Network connectivity problems
-- Missing or corrupted prescription data
-- Concurrent processing failures
-- Rate limiting from external APIs
-
-## 🤝 Contributing
-
-Contributions are welcome! Please feel free to:
-- Report bugs and issues
-- Suggest new features
-- Submit pull requests
-- Improve documentation
-
-## 📄 License
-
-This project is licensed under the Apache 2.0 License - see the [LICENSE](LICENSE) file for details.
-
-## 🙏 Acknowledgments
-
-- **xAI** for providing the powerful Grok-4 AI model
-- **Firecrawl** for comprehensive medicine data API
-- **Gradio** for the amazing web interface framework
-- **Community** for feedback and contributions
 
