@@ -15,7 +15,7 @@ from xai_sdk.chat import image, system, tool, tool_result, user
 # Initialize clients with connection pooling
 client = Client(
     api_key=os.getenv("XAI_API_KEY"),
-    timeout=60,
+    timeout=3600,
 )
 fc = FirecrawlApp(api_key=os.getenv("FIRECRAWL_API_KEY"))
 
@@ -26,7 +26,8 @@ def get_medicine_info_fast(name: str) -> Dict:
         results = fc.search(
             query=f"{name} medicine price availability",
             limit=1,
-            scrape_options=ScrapeOptions(formats=["markdown"]),
+            scrape_options=ScrapeOptions(formats=["markdown"], timeout=10000),
+            tbs="qdr:w",
         )
         snippet = results.data[0] if results.data else {}
         return {
@@ -216,9 +217,37 @@ def analyze_prescription_streaming(file_bytes):
                 )
             )
 
-            # Generate final report
-            final = chat.sample()
-            yield final.content
+            # Generate final report with streaming
+            accumulated_content = ""
+            try:
+                # Use streaming to get the final report
+                stream = chat.stream()
+                for stream_chunk in stream:
+                    # XAI SDK returns tuples with (Response, Chunk)
+                    for item in stream_chunk:
+                        if hasattr(item, 'choices') and item.choices:
+                            choice = item.choices[0]
+                            if hasattr(choice, 'content') and choice.content:
+                                text_content = choice.content
+                                accumulated_content += text_content
+                                # Yield the accumulated content so far for real-time streaming
+                                yield f"📝 **Live Report Generation:**\n\n{accumulated_content}"
+                
+                # Final yield with complete content
+                if accumulated_content:
+                    yield accumulated_content
+                else:
+                    # Fallback if streaming fails
+                    final = chat.sample()
+                    yield final.content
+                    
+            except Exception as stream_error:
+                # If streaming fails, fallback to regular sample
+                try:
+                    final = chat.sample()
+                    yield final.content
+                except Exception as e:
+                    yield f"Error generating final report: {str(e)}"
         else:
             yield response.content
 
@@ -314,7 +343,8 @@ def main():
 
                     # Check if this looks like the final markdown report
                     # (contains medicine headings, descriptions, or is longer content)
-                    if (
+                    # Also detect streaming report format
+                    is_final_report = (
                         progress_update.startswith("# ")
                         or progress_update.startswith("## ")
                         or (
@@ -323,7 +353,35 @@ def main():
                         or "Description" in progress_update
                         or "Price" in progress_update
                         or "Duration" in progress_update
-                    ):
+                        or ("📝 **Live Report Generation:**" in progress_update and len(progress_update) > 200)
+                    )
+                    
+                    # If it's a streaming report, extract the actual content
+                    if "📝 **Live Report Generation:**" in progress_update:
+                        # Extract content after the streaming header
+                        content_start = progress_update.find("📝 **Live Report Generation:**\n\n") + len("📝 **Live Report Generation:**\n\n")
+                        if content_start < len(progress_update):
+                            actual_content = progress_update[content_start:]
+                            # Check if the actual content looks like a report
+                            if (
+                                actual_content.startswith("# ")
+                                or actual_content.startswith("## ")
+                                or "Medicine" in actual_content
+                                or "Description" in actual_content
+                                or len(actual_content) > 50
+                            ):
+                                # Show the streaming content in the main report area
+                                yield (
+                                    actual_content,
+                                    f"Streaming... {elapsed:.1f}s elapsed",
+                                    "\n\n".join(all_logs),
+                                    gr.update(
+                                        interactive=False, value="⏳ Processing..."
+                                    ),
+                                )
+                                continue
+                    
+                    if is_final_report:
                         # This is the final report - show in main report, keep logs in accordion
                         final_markdown_report = progress_update
                         final_logs = (
