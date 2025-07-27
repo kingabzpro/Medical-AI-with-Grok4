@@ -117,10 +117,10 @@ The application will start and be available at `http://localhost:7860`
 ## 🏗️ Architecture
 
 ```
-┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
-│   Gradio UI     │───▶│   Grok-4 AI     │───▶│  Firecrawl API  │
-│   (Frontend)    │    │  (OCR & LLM)    │    │ (Medicine Data) │
-└─────────────────┘    └─────────────────┘    └─────────────────┘
+┌─────────────────┐    ┌─────────────────┐    ┌──────────────────┐
+│   Gradio UI     │──▶│   Grok-4 AI     │───▶│  Firecrawl API   │
+│   (Frontend)    │    │  (Agent & VLM)  │    │ (Search & Scrape)│
+└─────────────────┘    └─────────────────┘    └──────────────────┘
          │                       │                       │
          │                       ▼                       │
          │              ┌─────────────────┐              │
@@ -140,17 +140,6 @@ Medical-AI-with-Grok4/
 ├── README.md             # Project documentation
 └── .gitignore           # Git ignore file
 ```
-
-## 🔧 Configuration
-
-### Environment Variables
-
-| Variable | Description | Required |
-|----------|-------------|----------|
-| `XAI_API_KEY` | Your xAI API key for Grok-4 access | Yes |
-| `FIRECRAWL_API_KEY` | Your Firecrawl API key for data retrieval | Yes |
-| `MAX_WORKERS` | Maximum concurrent workers (default: 5) | No |
-| `TIMEOUT` | API timeout in seconds (default: 3600) | No |
 
 ## 🚨 Important Notes
 
