@@ -15,7 +15,7 @@ from xai_sdk.chat import image, system, tool, tool_result, user
 # Initialize clients with connection pooling
 client = Client(
     api_key=os.getenv("XAI_API_KEY"),
-    timeout=3600,
+    timeout=60,
 )
 fc = FirecrawlApp(api_key=os.getenv("FIRECRAWL_API_KEY"))
 
@@ -26,7 +26,7 @@ def get_medicine_info_fast(name: str) -> Dict:
         results = fc.search(
             query=f"{name} medicine price availability",
             limit=1,
-            scrape_options=ScrapeOptions(formats=["markdown"], timeout=10),
+            scrape_options=ScrapeOptions(formats=["markdown"]),
         )
         snippet = results.data[0] if results.data else {}
         return {
@@ -172,7 +172,7 @@ def analyze_prescription_streaming(file_bytes):
         chat.append(
             user(
                 "Extract all medicine names from this prescription and get their details efficiently.",
-                image(image_url=image_data_url, detail="high"),
+                image(image_url=image_data_url),
             )
         )
 
