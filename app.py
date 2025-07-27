@@ -27,7 +27,8 @@ def get_medicine_info_fast(name: str) -> Dict:
         results = fc.search(
             query=f"{name} medicine",  # Simplified query
             limit=1,
-            timeout=3000,  # Reduced from 10000 to 3000ms (3 seconds)
+            scrape_options=ScrapeOptions(formats=["markdown"], timeout=30000),
+            tbs="qdr:w",
         )
         snippet = results.data[0] if results.data else {}
         return {
@@ -48,9 +49,9 @@ def get_medicine_info_fast(name: str) -> Dict:
         }
 
 def get_multiple_medicines_concurrent(
-    medicine_names: List[str], max_workers: int = 8
+    medicine_names: List[str], max_workers: int = 5
 ) -> List[Dict]:
-    """Ultra-fast concurrent medicine info fetcher"""
+    """Fetch multiple medicine info concurrently"""
     results = []
     with ThreadPoolExecutor(max_workers=max_workers) as executor:
         future_to_medicine = {
@@ -59,18 +60,17 @@ def get_multiple_medicines_concurrent(
         }
         for future in as_completed(future_to_medicine):
             try:
-                result = future.result(timeout=8)  # Reduced from 30 to 8 seconds
+                result = future.result(timeout=30)
                 results.append(result)
             except Exception as e:
                 medicine_name = future_to_medicine[future]
-                # Use fallback data instead of error
                 results.append(
                     {
                         "name": medicine_name,
-                        "info_markdown": f"## {medicine_name}\n\nCommon medicine. Please consult your pharmacist for detailed information.",
+                        "info_markdown": "Timeout or error",
                         "url": "N/A",
-                        "description": f"{medicine_name} - Please consult healthcare provider for usage information",
-                        "status": "fallback",
+                        "description": f"Error: {str(e)}",
+                        "status": "error",
                     }
                 )
     return results
@@ -118,29 +118,8 @@ tools_map = {
 
 
 def encode_image_from_bytes(image_bytes) -> str:
-    """Encode image bytes to base64 string with compression"""
+    """Encode image bytes to base64 string"""
     return base64.b64encode(image_bytes).decode("utf-8")
-
-def resize_and_compress_image(image_bytes, max_size=(800, 800), quality=85):
-    """Resize and compress image for faster API processing"""
-    try:
-        # Open image
-        img = Image.open(io.BytesIO(image_bytes))
-        
-        # Convert to RGB if necessary (for JPEG compression)
-        if img.mode in ('RGBA', 'LA', 'P'):
-            img = img.convert('RGB')
-        
-        # Resize if too large while maintaining aspect ratio
-        img.thumbnail(max_size, Image.Resampling.LANCZOS)
-        
-        # Compress to JPEG for smaller file size
-        output = io.BytesIO()
-        img.save(output, format='JPEG', quality=quality, optimize=True)
-        return output.getvalue()
-    except Exception as e:
-        # If compression fails, return original
-        return image_bytes
 
 
 def get_image_mime_type(image_bytes):
@@ -167,19 +146,10 @@ def analyze_prescription_streaming(file_bytes):
             yield "Error: Uploaded file is not a valid JPG or PNG image."
             return
 
-        yield "✅ **Image Validated**\n\nCompressing image for faster processing..."
-        
-        # Compress and resize image for faster API processing
-        original_size = len(image_bytes)
-        compressed_bytes = resize_and_compress_image(image_bytes)
-        compressed_size = len(compressed_bytes)
-        
-        compression_ratio = (1 - compressed_size / original_size) * 100
-        yield f"🗜️ **Image Optimized**\n\nOriginal: {original_size/1024:.1f}KB → Compressed: {compressed_size/1024:.1f}KB ({compression_ratio:.1f}% reduction)\n\nPreparing for AI analysis..."
-        
-        encoded_img = encode_image_from_bytes(compressed_bytes)
-        # Force JPEG format for compressed images
-        image_data_url = f"data:image/jpeg;base64,{encoded_img}"
+        yield "✅ **Image Validated**\n\nPreparing image for AI analysis..."
+
+        encoded_img = encode_image_from_bytes(image_bytes)
+        image_data_url = f"data:{mime_type};base64,{encoded_img}"
 
         yield "🤖 **Connecting to Grok-4 AI**\n\nInitializing chat session..."
 
