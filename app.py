@@ -26,8 +26,7 @@ def get_medicine_info_fast(name: str) -> Dict:
         results = fc.search(
             query=f"{name} medicine price availability",
             limit=1,
-            scrape_options=ScrapeOptions(formats=["markdown"], timeout=10000),
-            tbs="qdr:w",
+            scrape_options=ScrapeOptions(formats=["markdown"]),
         )
         snippet = results.data[0] if results.data else {}
         return {
@@ -198,16 +197,38 @@ def analyze_prescription_streaming(file_bytes):
                 tool_results.append((func_name, func_args, result))
                 chat.append(tool_result(json.dumps(result)))
 
-                # Show API response
-                result_preview = (
-                    json.dumps(result, indent=2)[:500] + "..."
-                    if len(json.dumps(result)) > 500
-                    else json.dumps(result, indent=2)
-                )
-                current_progress = f"✅ **Firecrawl API Response:**\n```json\n{result_preview}\n```\n\n"
-                yield current_progress
+                # Show API response in JSON format with limited content
+                if isinstance(result, list):
+                    # Multiple medicines response - create summary for each
+                    summary_result = []
+                    for item in result:
+                        summary_item = {
+                            "name": item.get('name', 'Unknown'),
+                            "status": item.get('status', 'unknown'),
+                            "url": item.get('url', 'N/A')[:80] + "..." if len(item.get('url', '')) > 80 else item.get('url', 'N/A'),
+                            "info_markdown": item.get('info_markdown', '')[:100] + "..." if len(item.get('info_markdown', '')) > 100 else item.get('info_markdown', 'N/A'),
+                            "description": item.get('description', '')[:100] + "..." if len(item.get('description', '')) > 100 else item.get('description', 'N/A')
+                        }
+                        summary_result.append(summary_item)
+                    
+                    json_display = json.dumps(summary_result, indent=2)
+                    summary = f"✅ **Firecrawl API Response ({len(result)} medicines):**\n```json\n{json_display}\n```"
+                else:
+                    # Single medicine response
+                    summary_item = {
+                        "name": result.get('name', 'Unknown'),
+                        "status": result.get('status', 'unknown'),
+                        "url": result.get('url', 'N/A')[:80] + "..." if len(result.get('url', '')) > 80 else result.get('url', 'N/A'),
+                        "info_markdown": result.get('info_markdown', '')[:100] + "..." if len(result.get('info_markdown', '')) > 100 else result.get('info_markdown', 'N/A'),
+                        "description": result.get('description', '')[:100] + "..." if len(result.get('description', '')) > 100 else result.get('description', 'N/A')
+                    }
+                    
+                    json_display = json.dumps(summary_item, indent=2)
+                    summary = f"✅ **Firecrawl API Response:**\n```json\n{json_display}\n```"
+                
+                yield summary + "\n\n"
 
-            yield "📝 **Generating Final Report**\n\nAI is creating comprehensive markdown report..."
+            yield "🤔 **Grok 4 is Thinking**\n\nAI is thinking and will soon start generating the report..."
 
             # Request final formatted report
             chat.append(
