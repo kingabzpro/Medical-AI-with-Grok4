@@ -18,14 +18,17 @@ https://github.com/user-attachments/assets/4195b25a-f5a3-4425-8026-634bd43a752c
 - **Smart OCR**: Extract medicine names from prescription images using Grok-4 AI
 - **Concurrent Processing**: Fetch multiple medicine details simultaneously for faster results
 - **Real-time Streaming**: Watch AI work step-by-step with live progress updates
+- **Optimized Performance**: Ultra-fast medicine lookup with aggressive optimization and fallback handling
 
 ### 🎨 **Modern User Interface**
 - **Clean Design**: Professional Gradio web interface with intuitive layout
+- **Smart Button States**: Button automatically disables during processing to prevent duplicate requests
 - **Collapsible Logs**: Optional detailed processing logs hidden by default for clean UX
 - **Collapsible Disclaimer**: Important medical warnings in expandable section
 - **Responsive Layout**: Optimized for both desktop and mobile viewing
 
 ### 📋 **Comprehensive Reports**
+- **Live Report Streaming**: Watch AI generate your medical report in real-time with streaming text updates
 - **Structured Information**: Detailed markdown reports with medicine descriptions
 - **Price & Availability**: Real-time pricing and purchase information
 - **Processing Transparency**: Full visibility into AI decision-making process
@@ -87,9 +90,10 @@ The application will start and be available at `http://localhost:7860`
 
 ### Basic Workflow
 1. **Upload Image**: Click on the "Upload Prescription Image" area and select your prescription photo
-2. **Analyze**: Click the "Analyze Prescription" button
-3. **Monitor Progress**: Watch real-time processing updates in the main area
-4. **View Results**: Get comprehensive medicine information including:
+2. **Analyze**: Click the "Analyze Prescription" button (button automatically changes to "⏳ Processing..." and disables to prevent duplicate requests)
+3. **Monitor Progress**: Watch real-time processing updates in the main area and detailed logs in the collapsible section
+4. **Live Streaming**: Experience real-time report generation as the AI streams the final medical report text
+5. **View Results**: Get comprehensive medicine information including:
    - Medicine description and usage
    - Typical treatment duration
    - Price information and availability

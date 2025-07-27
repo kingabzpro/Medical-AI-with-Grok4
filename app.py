@@ -25,10 +25,9 @@ def get_medicine_info_fast(name: str) -> Dict:
     try:
         # Ultra-fast search with minimal timeout and no markdown scraping
         results = fc.search(
-            query=f"{name} medicine",  # Simplified query
+            query=f"{name} medicine price availability",
             limit=1,
-            scrape_options=ScrapeOptions(formats=["markdown"], timeout=30000),
-            tbs="qdr:w",
+            scrape_options=ScrapeOptions(formats=["markdown"], timeout=10000),
         )
         snippet = results.data[0] if results.data else {}
         return {
@@ -367,16 +366,23 @@ def main():
                     # Check if this looks like the final markdown report
                     # (contains medicine headings, descriptions, or is longer content)
                     # Also detect streaming report format
+                    # Exclude API responses and tool calls
                     is_final_report = (
-                        progress_update.startswith("# ")
-                        or progress_update.startswith("## ")
-                        or (
-                            "Medicine" in progress_update and len(progress_update) > 100
+                        not progress_update.startswith("✅ **Firecrawl API Response")
+                        and not progress_update.startswith("🛠️ **Tool Call")
+                        and not "{" in progress_update  # Exclude JSON responses
+                        and (
+                            progress_update.startswith("# ")
+                            or progress_update.startswith("## ")
+                            or (
+                                "Medicine" in progress_update and len(progress_update) > 100
+                                and not "medicines)" in progress_update  # Exclude API response summaries
+                            )
+                            or ("Description" in progress_update and not "description" in progress_update.lower()[:50])  # Exclude API JSON fields
+                            or ("Price" in progress_update and progress_update.startswith("## "))  # Only markdown headings
+                            or ("Duration" in progress_update and progress_update.startswith("## "))  # Only markdown headings
+                            or ("📝 **Live Report Generation:**" in progress_update and len(progress_update) > 200)
                         )
-                        or "Description" in progress_update
-                        or "Price" in progress_update
-                        or "Duration" in progress_update
-                        or ("📝 **Live Report Generation:**" in progress_update and len(progress_update) > 200)
                     )
                     
                     # If it's a streaming report, extract the actual content
