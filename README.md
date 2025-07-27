@@ -6,11 +6,7 @@
 
 A powerful AI-driven medical prescription analyzer that extracts medicine information from prescription images and provides comprehensive reports including prices, availability, dosage, and purchase links. Features a modern, clean interface with real-time streaming progress and collapsible sections for optimal user experience.
 
-
-
-https://github.com/user-attachments/assets/4195b25a-f5a3-4425-8026-634bd43a752c
-
-
+https://github.com/user-attachments/assets/b1367bfb-19f4-4044-a32c-77280b8319cb
 
 ## ✨ Key Features
 
