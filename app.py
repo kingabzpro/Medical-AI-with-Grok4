@@ -174,7 +174,7 @@ def analyze_prescription_streaming(file_bytes):
         chat.append(
             user(
                 "Extract all medicine names from this prescription and get their details efficiently.",
-                image(image_url=image_data_url),
+                image(image_url=image_data_url, detail="auto"),
             )
         )
 
