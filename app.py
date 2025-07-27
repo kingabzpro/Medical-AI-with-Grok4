@@ -11,6 +11,9 @@ from firecrawl import FirecrawlApp, ScrapeOptions
 from PIL import Image
 from xai_sdk import Client
 from xai_sdk.chat import image, system, tool, tool_result, user
+import dotenv
+
+dotenv.load_dotenv()
 
 # Initialize clients with connection pooling
 client = Client(

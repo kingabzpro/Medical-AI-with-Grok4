@@ -67,11 +67,7 @@ pip install -r requirements.txt
 
 Copy the example environment file and add your API keys:
 
-```bash
-cp .env.example .env
-```
-
-Edit the `.env` file with your actual API keys:
+Create the `.env` file with your actual API keys:
 
 ```env
 XAI_API_KEY=your_xai_api_key_here
