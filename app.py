@@ -26,7 +26,7 @@ def get_medicine_info_fast(name: str) -> Dict:
         results = fc.search(
             query=f"{name} medicine price availability",
             limit=1,
-            scrape_options=ScrapeOptions(formats=["markdown"]),
+            scrape_options=ScrapeOptions(formats=["markdown"], timeout=10),
         )
         snippet = results.data[0] if results.data else {}
         return {
@@ -228,6 +228,9 @@ def analyze_prescription_streaming(file_bytes):
 
 # Gradio interface (Blocks version)
 def main():
+    # Processing state to prevent multiple requests
+    processing_state = {"is_processing": False}
+
     with gr.Blocks(theme=gr.themes.Base()) as demo:
         gr.Markdown(
             """
@@ -239,7 +242,13 @@ def main():
         )
         with gr.Row():
             with gr.Column():
-                file_input = gr.Image(label="Upload Prescription Image", type="pil")
+                file_input = gr.Image(
+                    label="Upload Prescription Image",
+                    type="pil",
+                    height=400,  # Set image component height
+                    width=400,  # Set image component width
+                    format="png",
+                )
                 analyze_btn = gr.Button("Analyze Prescription", variant="primary")
             with gr.Column():
                 report_output = gr.Markdown(
@@ -258,115 +267,165 @@ def main():
 
         def analyze_with_streaming_progress(image):
             """Analyze prescription with streaming progress updates"""
-            start_time = time.time()
-
-            if image is None:
+            # Prevent multiple concurrent requests
+            if processing_state["is_processing"]:
                 yield (
-                    "❌ **Error:** Please upload an image first.",
-                    "No image provided.",
-                    "Logs will appear here during processing...",
+                    "⚠️ **Already Processing:** Please wait for the current analysis to complete.",
+                    "Another request is already being processed.",
+                    "Please wait for the current analysis to finish before starting a new one.",
+                    gr.update(
+                        interactive=True, value="Analyze Prescription"
+                    ),  # Keep button enabled for this message
                 )
                 return
 
-            # Convert PIL image to bytes
-            buf = io.BytesIO()
-            image.save(
-                buf,
-                format=image.format
-                if hasattr(image, "format") and image.format
-                else "PNG",
-            )
-            image_bytes = buf.getvalue()
+            processing_state["is_processing"] = True
+            start_time = time.time()
 
-            # Accumulate all logs to show complete process
-            all_logs = []
-            final_markdown_report = ""
-
-            # Use the streaming generator
-            for progress_update in analyze_prescription_streaming(image_bytes):
-                elapsed = time.time() - start_time
-
-                # Check if this looks like the final markdown report
-                # (contains medicine headings, descriptions, or is longer content)
-                if (
-                    progress_update.startswith("# ")
-                    or progress_update.startswith("## ")
-                    or "Medicine" in progress_update
-                    and len(progress_update) > 100
-                    or "Description" in progress_update
-                    or "Price" in progress_update
-                    or "Duration" in progress_update
-                ):
-                    # This is the final report - show in main report, keep logs in accordion
-                    final_markdown_report = progress_update
-                    final_logs = (
-                        "\n\n".join(all_logs)
-                        if all_logs
-                        else "Processing completed successfully!"
-                    )
+            try:
+                if image is None:
                     yield (
-                        final_markdown_report,
-                        f"✅ Completed in {elapsed:.2f} seconds",
-                        final_logs,
+                        "❌ **Error:** Please upload an image first.",
+                        "No image provided.",
+                        "Logs will appear here during processing...",
+                        gr.update(
+                            interactive=True, value="Analyze Prescription"
+                        ),  # Re-enable button on error
                     )
                     return
-                else:
-                    # This is a process log - accumulate and show in logs section
-                    all_logs.append(progress_update)
-                    # Show processing message in main area, detailed logs in accordion
-                    processing_message = "👨‍⚕️ **Processing in progress...**\n\nAnalyzing prescription image and fetching medicine information.\n\n*Check the Processing Logs section below for detailed step-by-step progress.*"
-                    yield (
-                        processing_message,
-                        f"Processing... {elapsed:.1f}s elapsed",
-                        "\n\n".join(all_logs),
-                    )
 
-            # If we somehow don't detect the final report, show the last update
-            if not final_markdown_report:
-                elapsed = time.time() - start_time
-                final_logs = (
-                    "\n\n".join(all_logs) if all_logs else "Processing completed."
+                # Convert PIL image to bytes
+                buf = io.BytesIO()
+                image.save(
+                    buf,
+                    format=image.format
+                    if hasattr(image, "format") and image.format
+                    else "PNG",
                 )
-                # Check if the last update could be the report
-                if all_logs and len(all_logs[-1]) > 50:
-                    yield (
-                        all_logs[-1],
-                        f"✅ Completed in {elapsed:.2f} seconds",
-                        final_logs,
+                image_bytes = buf.getvalue()
+
+                # Accumulate all logs to show complete process
+                all_logs = []
+                final_markdown_report = ""
+
+                # Use the streaming generator
+                for progress_update in analyze_prescription_streaming(image_bytes):
+                    elapsed = time.time() - start_time
+
+                    # Check if this looks like the final markdown report
+                    # (contains medicine headings, descriptions, or is longer content)
+                    if (
+                        progress_update.startswith("# ")
+                        or progress_update.startswith("## ")
+                        or (
+                            "Medicine" in progress_update and len(progress_update) > 100
+                        )
+                        or "Description" in progress_update
+                        or "Price" in progress_update
+                        or "Duration" in progress_update
+                    ):
+                        # This is the final report - show in main report, keep logs in accordion
+                        final_markdown_report = progress_update
+                        final_logs = (
+                            "\n\n".join(all_logs)
+                            if all_logs
+                            else "Processing completed successfully!"
+                        )
+                        yield (
+                            final_markdown_report,
+                            f"✅ Completed in {elapsed:.2f} seconds",
+                            final_logs,
+                            gr.update(
+                                interactive=True, value="Analyze Prescription"
+                            ),  # Re-enable button
+                        )
+                        return
+                    else:
+                        # This is a process log - accumulate and show in logs section
+                        all_logs.append(progress_update)
+                        # Show processing message in main area, detailed logs in accordion
+                        processing_message = "👨‍⚕️ **Processing in progress...**\n\nAnalyzing prescription image and fetching medicine information.\n\n*Check the Processing Logs section below for detailed step-by-step progress.*"
+                        yield (
+                            processing_message,
+                            f"Processing... {elapsed:.1f}s elapsed",
+                            "\n\n".join(all_logs),
+                            gr.update(
+                                interactive=False, value="⏳ Processing..."
+                            ),  # Keep button disabled during processing
+                        )
+
+                # If we somehow don't detect the final report, show the last update
+                if not final_markdown_report:
+                    elapsed = time.time() - start_time
+                    final_logs = (
+                        "\n\n".join(all_logs) if all_logs else "Processing completed."
                     )
-                else:
-                    yield (
-                        "Analysis completed. Please check the processing logs for details.",
-                        f"✅ Completed in {elapsed:.2f} seconds",
-                        final_logs,
-                    )
+                    # Check if the last update could be the report
+                    if all_logs and len(all_logs[-1]) > 50:
+                        yield (
+                            all_logs[-1],
+                            f"✅ Completed in {elapsed:.2f} seconds",
+                            final_logs,
+                            gr.update(
+                                interactive=True, value="Analyze Prescription"
+                            ),  # Re-enable button
+                        )
+                    else:
+                        yield (
+                            "Analysis completed. Please check the processing logs for details.",
+                            f"✅ Completed in {elapsed:.2f} seconds",
+                            final_logs,
+                            gr.update(
+                                interactive=True, value="Analyze Prescription"
+                            ),  # Re-enable button
+                        )
+            except Exception as e:
+                # Handle any unexpected errors
+                elapsed = time.time() - start_time
+                yield (
+                    f"❌ **Error during processing:** {str(e)}",
+                    f"Error after {elapsed:.2f} seconds",
+                    "An unexpected error occurred during processing.",
+                    gr.update(
+                        interactive=True, value="Analyze Prescription"
+                    ),  # Re-enable button on error
+                )
+            finally:
+                # Always reset processing state
+                processing_state["is_processing"] = False
 
         def show_initial_processing(image):
-            """Show initial processing message"""
+            """Show initial processing message and disable button"""
             if image is None:
                 return (
                     "❌ **Error:** Please upload an image first.",
                     "No image provided.",
                     "Logs will appear here during processing...",
+                    gr.update(
+                        interactive=True, value="Analyze Prescription"
+                    ),  # Keep enabled if no image
                 )
             return (
                 "🚀 **Processing Started!**\n\nInitializing analysis...",
                 "Processing...",
                 "Initializing...",
+                gr.update(
+                    interactive=False, value="⏳ Processing..."
+                ),  # Disable button during processing
             )
 
         # Event handlers
         analyze_btn.click(
             show_initial_processing,
             inputs=[file_input],
-            outputs=[report_output, time_output, logs_output],
+            outputs=[report_output, time_output, logs_output, analyze_btn],
             queue=False,
         )
 
         analyze_btn.click(
             analyze_with_streaming_progress,
             inputs=[file_input],
-            outputs=[report_output, time_output, logs_output],
+            outputs=[report_output, time_output, logs_output, analyze_btn],
             queue=True,
         )
 
