@@ -15,7 +15,7 @@ import dotenv
 
 dotenv.load_dotenv()
 
-# Initialize clients with connection pooling
+# Initialize clients
 client = Client(
     api_key=os.getenv("XAI_API_KEY"),
     timeout=3600,
@@ -26,7 +26,7 @@ fc = FirecrawlApp(api_key=os.getenv("FIRECRAWL_API_KEY"))
 def get_medicine_info_fast(name: str) -> Dict:
     """Super fast medicine info fetcher with aggressive optimization"""
     try:
-        # Ultra-fast search with minimal timeout and no markdown scraping
+        # Ultra-fast search with minimal timeout
         results = fc.search(
             query=f"{name} medicine price availability",
             limit=1,
